@@ -3,7 +3,7 @@ import Transaction from '../models/Transaction';
 import StatementImport from '../models/StatementImport';
 import BankAccount from '../models/BankAccount';
 import FinancialAudit from '../models/FinancialAudit';
-const ofx = require('node-ofx-parser');
+import { XMLParser } from 'fast-xml-parser';
 import fs from 'fs';
 
 // @desc    Upload and parse OFX statement
@@ -21,7 +21,7 @@ export const uploadStatement = async (req: any, res: Response) => {
         }
 
         const fileContent = fs.readFileSync(req.file.path, 'utf8');
-        const data = ofx.parse(fileContent);
+        const data = parseOfx(fileContent);
 
         // Standard OFX structure: OFX.BANKMSGSRSV1.STMTTRNRS.STMTRS.BANKTRANLIST.STMTTRN
         const transactions = data.OFX.BANKMSGSRSV1.STMTTRNRS.STMTRS.BANKTRANLIST.STMTTRN;
@@ -55,6 +55,30 @@ export const uploadStatement = async (req: any, res: Response) => {
         res.status(500).json({ message: 'Erro ao processar arquivo OFX: ' + error.message });
     }
 };
+
+function parseOfx(ofxContent: string) {
+    const ofxStart = ofxContent.indexOf('<OFX>');
+    if (ofxStart < 0) {
+        throw new Error('Arquivo OFX inválido: tag <OFX> não encontrada.');
+    }
+
+    // OFX 1.x commonly omits closing tags. Convert SGML-like blocks to XML.
+    const rawBody = ofxContent.slice(ofxStart).replace(/\r/g, '');
+    const normalized = rawBody
+        .replace(/&(?!(amp|lt|gt|quot|apos);)/g, '&amp;')
+        .replace(/<([A-Z0-9_.-]+)>([^<\n\r]+)/g, (_match, tag, value) => {
+            return `<${tag}>${value.trim()}</${tag}>`;
+        });
+
+    const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: '',
+        trimValues: true,
+        parseTagValue: false,
+    });
+
+    return parser.parse(normalized);
+}
 
 // Helper to parse OFX date YYYYMMDDHHMMSS[-5:EST]
 function parseOFXDate(ofxDate: string) {

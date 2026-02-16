@@ -35,11 +35,7 @@ const ProfileEditor = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const [sourceImageUrl, setSourceImageUrl] = useState<string>('');
-    const [avatarPreview, setAvatarPreview] = useState<string>(user?.avatar || '');
-    const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null);
-    const [zoom, setZoom] = useState(1);
-    const [offsetX, setOffsetX] = useState(0);
-    const [offsetY, setOffsetY] = useState(0);
+    const [zoom, setZoom] = useState(1.2);
 
     const initials = useMemo(() => getInitials(name || user?.name), [name, user?.name]);
 
@@ -54,13 +50,11 @@ const ProfileEditor = () => {
 
         const localUrl = URL.createObjectURL(file);
         setSourceImageUrl(localUrl);
-        setZoom(1);
-        setOffsetX(0);
-        setOffsetY(0);
+        setZoom(1.2);
     };
 
-    const applyCrop = async () => {
-        if (!sourceImageUrl) return;
+    const buildCircularAvatarBlob = async () => {
+        if (!sourceImageUrl) return null;
 
         const image = await new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
@@ -70,34 +64,25 @@ const ProfileEditor = () => {
         });
 
         const cropSize = Math.min(image.width, image.height) / zoom;
-        const maxX = (image.width - cropSize) / 2;
-        const maxY = (image.height - cropSize) / 2;
-        const sx = clamp((image.width - cropSize) / 2 + (offsetX / 100) * maxX, 0, image.width - cropSize);
-        const sy = clamp((image.height - cropSize) / 2 + (offsetY / 100) * maxY, 0, image.height - cropSize);
+        const sx = clamp((image.width - cropSize) / 2, 0, image.width - cropSize);
+        const sy = clamp((image.height - cropSize) / 2, 0, image.height - cropSize);
 
         const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
+        canvas.width = 512;
+        canvas.height = 512;
         const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            toast.error('Não foi possível processar a imagem.');
-            return;
-        }
+        if (!ctx) return null;
 
-        ctx.drawImage(image, sx, sy, cropSize, cropSize, 0, 0, 256, 256);
+        ctx.clearRect(0, 0, 512, 512);
+        ctx.beginPath();
+        ctx.arc(256, 256, 256, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(image, sx, sy, cropSize, cropSize, 0, 0, 512, 512);
 
-        const blob = await new Promise<Blob | null>((resolve) => {
-            canvas.toBlob((result) => resolve(result), 'image/jpeg', 0.9);
+        return await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob((result) => resolve(result), 'image/png');
         });
-
-        if (!blob) {
-            toast.error('Falha ao gerar imagem cortada.');
-            return;
-        }
-
-        setAvatarBlob(blob);
-        setAvatarPreview(URL.createObjectURL(blob));
-        toast.success('Foto ajustada com sucesso.');
     };
 
     const handleSave = async () => {
@@ -125,9 +110,16 @@ const ProfileEditor = () => {
         try {
             let avatarToSave = user?.avatar || '';
 
-            if (avatarBlob) {
+            if (sourceImageUrl) {
+                const avatarBlob = await buildCircularAvatarBlob();
+                if (!avatarBlob) {
+                    toast.error('Não foi possível preparar a foto de perfil.');
+                    setIsSaving(false);
+                    return;
+                }
+
                 const formData = new FormData();
-                formData.append('photo', avatarBlob, 'avatar.jpg');
+                formData.append('photo', avatarBlob, 'avatar.png');
                 const uploadResponse = await api.post('/upload', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
@@ -160,7 +152,6 @@ const ProfileEditor = () => {
             setNewPassword('');
             setConfirmPassword('');
             setSourceImageUrl('');
-            setAvatarBlob(null);
             toast.success('Perfil atualizado com sucesso.');
         } catch (error: any) {
             const message = error?.response?.data?.message || 'Não foi possível atualizar o perfil.';
@@ -180,8 +171,8 @@ const ProfileEditor = () => {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
-                    {avatarPreview ? (
-                        <img src={avatarPreview} alt="Avatar" className="h-16 w-16 rounded-full object-cover border" />
+                    {(sourceImageUrl || user?.avatar) ? (
+                        <img src={sourceImageUrl || user?.avatar} alt="Avatar" className="h-16 w-16 rounded-full object-cover border" />
                     ) : (
                         <div className="h-16 w-16 rounded-full border flex items-center justify-center text-sm font-semibold bg-muted">
                             {initials}
@@ -195,50 +186,31 @@ const ProfileEditor = () => {
 
                 {sourceImageUrl && (
                     <div className="space-y-3 rounded-md border p-4">
-                        <Label>Editor da foto (recorte quadrado)</Label>
-                        <img
-                            src={sourceImageUrl}
-                            alt="Pré-visualização para recorte"
-                            className="max-h-64 rounded-md border object-contain w-full bg-muted/20"
-                        />
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <div className="space-y-1">
-                                <Label>Zoom ({zoom.toFixed(1)}x)</Label>
-                                <Input
-                                    type="range"
-                                    min="1"
-                                    max="3"
-                                    step="0.1"
-                                    value={zoom}
-                                    onChange={(e) => setZoom(Number(e.target.value))}
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label>Posição horizontal ({offsetX})</Label>
-                                <Input
-                                    type="range"
-                                    min="-100"
-                                    max="100"
-                                    step="1"
-                                    value={offsetX}
-                                    onChange={(e) => setOffsetX(Number(e.target.value))}
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label>Posição vertical ({offsetY})</Label>
-                                <Input
-                                    type="range"
-                                    min="-100"
-                                    max="100"
-                                    step="1"
-                                    value={offsetY}
-                                    onChange={(e) => setOffsetY(Number(e.target.value))}
+                        <Label>Pré-visualização da foto</Label>
+                        <div className="flex justify-center">
+                            <div className="h-40 w-40 overflow-hidden rounded-full border-4 border-primary/20 bg-muted">
+                                <img
+                                    src={sourceImageUrl}
+                                    alt="Pré-visualização"
+                                    className="h-full w-full object-cover"
+                                    style={{ transform: `scale(${zoom})` }}
                                 />
                             </div>
                         </div>
-                        <Button type="button" variant="outline" onClick={applyCrop}>
-                            Aplicar recorte
-                        </Button>
+                        <div className="space-y-1">
+                            <Label>Ajustar zoom ({zoom.toFixed(1)}x)</Label>
+                            <Input
+                                type="range"
+                                min="1"
+                                max="2.5"
+                                step="0.1"
+                                value={zoom}
+                                onChange={(e) => setZoom(Number(e.target.value))}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            O recorte circular será aplicado automaticamente ao salvar.
+                        </p>
                     </div>
                 )}
 

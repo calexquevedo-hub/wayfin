@@ -19,7 +19,7 @@ import {
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { Workbook } from 'exceljs';
 
 const EnrollmentReports = () => {
     const [enrollments, setEnrollments] = useState<any[]>([]);
@@ -109,25 +109,60 @@ const EnrollmentReports = () => {
         document.body.removeChild(link);
     };
 
-    const exportToExcel = () => {
-        const data = enrollments.map(enr => ({
-            'Titular': enr.collaborator?.name || '',
-            'Beneficiário': enr.dependent ? enr.collaborator?.dependents?.find((d: any) => d._id === enr.dependent)?.name : 'TITULAR',
-            'Tipo': enr.type === 'Health' ? 'Saúde' : 'Odontológico',
-            'Operadora': enr.healthPlan?.operator || enr.dentalPlan?.operator || '-',
-            'Plano': enr.healthPlan?.planName || enr.dentalPlan?.planName || '-',
-            'Cód. ANS': enr.healthPlan?.ansCode || '-',
-            'Resp. Financeiro': enr.financialResponsible?.name || enr.collaborator?.name || '',
-            'Status': enr.status === 'active' ? 'Ativo' : enr.status === 'inactive' ? 'Inativo' : 'Pendente',
-            'Vencimento': enr.healthPlan?.billingDay || enr.dentalPlan?.billingDay ? `Dia ${enr.healthPlan?.billingDay || enr.dentalPlan?.billingDay}` : '-',
-            'Custo Mensal': enr.monthlyCost,
-            'Diferença Retroativa': enr.retroactiveDiff
-        }));
+    const exportToExcel = async () => {
+        const workbook = new Workbook();
+        const worksheet = workbook.addWorksheet('Adesões');
 
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Adesões");
-        XLSX.writeFile(wb, `relatorio_adesao_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+        worksheet.columns = [
+            { header: 'Titular', key: 'titular', width: 24 },
+            { header: 'Beneficiário', key: 'beneficiario', width: 24 },
+            { header: 'Tipo', key: 'tipo', width: 14 },
+            { header: 'Operadora', key: 'operadora', width: 24 },
+            { header: 'Plano', key: 'plano', width: 24 },
+            { header: 'Cód. ANS', key: 'ansCode', width: 14 },
+            { header: 'Resp. Financeiro', key: 'responsavel', width: 24 },
+            { header: 'Status', key: 'status', width: 12 },
+            { header: 'Vencimento', key: 'vencimento', width: 14 },
+            { header: 'Custo Mensal', key: 'custoMensal', width: 16 },
+            { header: 'Diferença Retroativa', key: 'retroativa', width: 20 },
+        ];
+
+        enrollments.forEach((enr) => {
+            worksheet.addRow({
+                titular: enr.collaborator?.name || '',
+                beneficiario: enr.dependent
+                    ? enr.collaborator?.dependents?.find((d: any) => d._id === enr.dependent)?.name
+                    : 'TITULAR',
+                tipo: enr.type === 'Health' ? 'Saúde' : 'Odontológico',
+                operadora: enr.healthPlan?.operator || enr.dentalPlan?.operator || '-',
+                plano: enr.healthPlan?.planName || enr.dentalPlan?.planName || '-',
+                ansCode: enr.healthPlan?.ansCode || '-',
+                responsavel: enr.financialResponsible?.name || enr.collaborator?.name || '',
+                status: enr.status === 'active' ? 'Ativo' : enr.status === 'inactive' ? 'Inativo' : 'Pendente',
+                vencimento: enr.healthPlan?.billingDay || enr.dentalPlan?.billingDay
+                    ? `Dia ${enr.healthPlan?.billingDay || enr.dentalPlan?.billingDay}`
+                    : '-',
+                custoMensal: enr.monthlyCost,
+                retroativa: enr.retroactiveDiff,
+            });
+        });
+
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getColumn('custoMensal').numFmt = '"R$"#,##0.00';
+        worksheet.getColumn('retroativa').numFmt = '"R$"#,##0.00';
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `relatorio_adesao_${format(new Date(), 'yyyyMMdd')}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     const exportToPDF = () => {
