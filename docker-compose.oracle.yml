@@ -1,0 +1,15 @@
+services:
+  mongodb:
+    ports: []
+
+  server:
+    ports: []
+    env_file:
+      - ./server/.env.oracle
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/wayfin
+
+  client:
+    ports:
+      - "80:80"

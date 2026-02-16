@@ -1,0 +1,27 @@
+# OS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Local tools/cache
+.tools/
+.npm-cache/
+
+# Local database/runtime artifacts
+.mongo/
+*.log
+client.log
+server.log
+
+# Env files
+.env
+.env.*
+!.env.example
+!server/.env.example
+!client/.env.example
+!server/.env.oracle.example
+
+# Build outputs
+dist/
+coverage/
