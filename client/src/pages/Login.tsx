@@ -40,7 +40,7 @@ const Login = () => {
 
     return (
         <div className="flex bg-background min-h-screen items-center justify-center">
-            <Card className="w-[350px]">
+            <Card className="w-full max-w-[350px] mx-4">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
                         <img src="/logo.png" alt="WayFin Logo" className="w-12 h-12 object-contain" />

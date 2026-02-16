@@ -23,7 +23,7 @@ const Settings = () => {
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                <TabsList className="flex w-full flex-wrap gap-2 lg:w-[400px]">
                     <TabsTrigger value="general">Geral</TabsTrigger>
                     {isAdmin && <TabsTrigger value="profiles">Perfis de Acesso</TabsTrigger>}
                     {isAdmin && <TabsTrigger value="users">Usuários</TabsTrigger>}

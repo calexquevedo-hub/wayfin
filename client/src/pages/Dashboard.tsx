@@ -140,7 +140,7 @@ const Dashboard = () => {
                         Sistema Financeiro - {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     <Button variant="outline" className="rounded-xl font-bold border-2 hover:bg-primary hover:text-white transition-all shadow-sm" onClick={() => fetchData(true)}>
                         <RefreshCw className="mr-2 h-4 w-4" /> Atualizar
                     </Button>

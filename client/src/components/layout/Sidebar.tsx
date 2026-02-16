@@ -15,7 +15,12 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
-const Sidebar = () => {
+interface SidebarProps {
+    className?: string;
+    onNavigate?: () => void;
+}
+
+const Sidebar = ({ className, onNavigate }: SidebarProps) => {
     const { pathname } = useLocation();
     const { logout, user } = useAuth(); // Get user from auth context
 
@@ -102,7 +107,7 @@ const Sidebar = () => {
         : 'U';
 
     return (
-        <aside className="w-64 bg-card border-r border-border h-screen flex flex-col">
+        <aside className={cn("w-64 bg-card border-r border-border h-screen flex flex-col", className)}>
             <div className="p-6 flex items-center gap-2">
                 <img src="/logo.png" alt="WayFin Logo" className="w-8 h-8 object-contain" />
                 <h1 className="text-2xl font-bold tracking-tight text-primary">WayFin</h1>
@@ -120,6 +125,7 @@ const Sidebar = () => {
                                     <Link
                                         key={link.href}
                                         to={link.href}
+                                        onClick={onNavigate}
                                         className={cn(
                                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
                                             pathname === link.href ? "bg-accent text-accent-foreground" : "text-muted-foreground"
@@ -148,7 +154,14 @@ const Sidebar = () => {
                         <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                     </div>
                 </div>
-                <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={logout}>
+                <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                        logout();
+                        onNavigate?.();
+                    }}
+                >
                     <LogOut className="h-4 w-4" />
                     Sair
                 </Button>
