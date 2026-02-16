@@ -21,6 +21,7 @@ const authUser = async (req: Request, res: Response) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
             active: user.active,
             profile: user.profile,
@@ -55,6 +56,7 @@ const registerUser = async (req: Request, res: Response) => {
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
             token: generateToken(user._id.toString()),
         });
@@ -67,18 +69,92 @@ const registerUser = async (req: Request, res: Response) => {
 // @route   GET /api/auth/profile
 // @access  Private
 const getUserProfile = async (req: any, res: Response) => {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).populate('profile');
 
     if (user) {
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
+            avatar: user.avatar,
             isAdmin: user.isAdmin,
+            active: user.active,
+            profile: user.profile,
         });
     } else {
         res.status(404).json({ message: 'User not found' });
     }
+};
+
+// @desc    Update user profile data (name/email/avatar/password)
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateUserProfile = async (req: any, res: Response) => {
+    const user = await User.findById(req.user._id).populate('profile');
+
+    if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+    }
+
+    const {
+        name,
+        email,
+        avatar,
+        currentPassword,
+        newPassword,
+        confirmPassword,
+    } = req.body;
+
+    if (email && email !== user.email) {
+        const emailExists = await User.findOne({ email });
+        if (emailExists && emailExists._id.toString() !== user._id.toString()) {
+            res.status(400).json({ message: 'Email already in use' });
+            return;
+        }
+        user.email = email;
+    }
+
+    if (typeof name === 'string' && name.trim()) {
+        user.name = name.trim();
+    }
+
+    if (typeof avatar === 'string') {
+        user.avatar = avatar;
+    }
+
+    if (newPassword || confirmPassword || currentPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            res.status(400).json({ message: 'Para alterar a senha, preencha senha atual, nova senha e confirmação.' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            res.status(400).json({ message: 'A confirmação da nova senha não confere.' });
+            return;
+        }
+
+        const isCurrentPasswordValid = await user.matchPassword(currentPassword);
+        if (!isCurrentPasswordValid) {
+            res.status(400).json({ message: 'Senha atual inválida.' });
+            return;
+        }
+
+        user.password = newPassword;
+    }
+
+    const updatedUser = await user.save();
+    await updatedUser.populate('profile');
+
+    res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        isAdmin: updatedUser.isAdmin,
+        active: updatedUser.active,
+        profile: updatedUser.profile,
+    });
 };
 
 // @desc    Forgot Password
@@ -138,4 +214,4 @@ const resetPassword = async (req: Request, res: Response) => {
     }
 };
 
-export { authUser, registerUser, getUserProfile, forgotPassword, resetPassword };
+export { authUser, registerUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword };

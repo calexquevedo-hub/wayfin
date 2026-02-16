@@ -7,6 +7,7 @@ import { Moon, Sun, Laptop } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Profiles from './Profiles';
 import UsersPage from './Users';
+import ProfileEditor from '@/components/settings/ProfileEditor';
 
 const Settings = () => {
     const { theme, setTheme } = useTheme();
@@ -29,6 +30,8 @@ const Settings = () => {
                 </TabsList>
 
                 <TabsContent value="general" className="space-y-4 pt-4">
+                    <ProfileEditor />
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Aparência</CardTitle>

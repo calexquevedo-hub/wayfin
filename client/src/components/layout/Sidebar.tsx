@@ -97,6 +97,10 @@ const Sidebar = () => {
         items: group.items.filter(item => hasPermission(item.href))
     })).filter(group => group.items.length > 0);
 
+    const initials = user?.name
+        ? user.name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+        : 'U';
+
     return (
         <aside className="w-64 bg-card border-r border-border h-screen flex flex-col">
             <div className="p-6 flex items-center gap-2">
@@ -131,6 +135,19 @@ const Sidebar = () => {
                 ))}
             </nav>
             <div className="p-4 border-t border-border">
+                <div className="mb-3 flex items-center gap-3 rounded-md border p-2">
+                    {user?.avatar ? (
+                        <img src={user.avatar} alt="Avatar do usuário" className="h-9 w-9 rounded-full object-cover border" />
+                    ) : (
+                        <div className="h-9 w-9 rounded-full border flex items-center justify-center text-xs font-semibold bg-muted">
+                            {initials}
+                        </div>
+                    )}
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{user?.name || 'Usuário'}</p>
+                        <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
+                    </div>
+                </div>
                 <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={logout}>
                     <LogOut className="h-4 w-4" />
                     Sair

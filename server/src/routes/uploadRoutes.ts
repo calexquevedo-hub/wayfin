@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ const upload = multer({
 // @desc    Upload a photo
 // @route   POST /api/upload
 // @access  Private
-router.post('/', upload.single('photo'), (req, res) => {
+router.post('/', protect, upload.single('photo'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'Nenhum arquivo enviado' });
     }

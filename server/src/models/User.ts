@@ -7,6 +7,7 @@ export interface IUser extends Document {
     password: string;
     profile: mongoose.Types.ObjectId;
     active: boolean;
+    avatar?: string;
     resetPasswordToken?: string;
     resetPasswordExpire?: Date;
     isAdmin: boolean; // Deprecated, use profile instead
@@ -34,6 +35,10 @@ const userSchema = new Schema<IUser>({
     active: {
         type: Boolean,
         default: true,
+    },
+    avatar: {
+        type: String,
+        default: '',
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,

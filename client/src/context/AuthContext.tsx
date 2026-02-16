@@ -4,6 +4,7 @@ interface User {
     _id: string;
     name: string;
     email: string;
+    avatar?: string;
     isAdmin: boolean;
     token: string;
     active: boolean;
@@ -17,6 +18,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     login: (userInfo: User) => void;
+    updateUser: (partial: Partial<User>) => void;
     logout: () => void;
     loading: boolean;
 }
@@ -40,13 +42,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
     };
 
+    const updateUser = (partial: Partial<User>) => {
+        setUser((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev, ...partial };
+            localStorage.setItem('userInfo', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
     const logout = () => {
         setUser(null);
         localStorage.removeItem('userInfo');
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, updateUser, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
