@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
@@ -22,6 +22,7 @@ interface SidebarProps {
 
 const Sidebar = ({ className, onNavigate }: SidebarProps) => {
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const { logout, user } = useAuth(); // Get user from auth context
 
     // Map routes to permission keys
@@ -141,7 +142,14 @@ const Sidebar = ({ className, onNavigate }: SidebarProps) => {
                 ))}
             </nav>
             <div className="p-4 border-t border-border">
-                <div className="mb-3 flex items-center gap-3 rounded-md border p-2">
+                <button
+                    type="button"
+                    className="mb-3 flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors hover:bg-accent"
+                    onClick={() => {
+                        navigate('/settings');
+                        onNavigate?.();
+                    }}
+                >
                     {user?.avatar ? (
                         <img src={user.avatar} alt="Avatar do usuário" className="h-9 w-9 rounded-full object-cover border" />
                     ) : (
@@ -153,7 +161,7 @@ const Sidebar = ({ className, onNavigate }: SidebarProps) => {
                         <p className="truncate text-sm font-medium">{user?.name || 'Usuário'}</p>
                         <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                     </div>
-                </div>
+                </button>
                 <Button
                     variant="ghost"
                     className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
