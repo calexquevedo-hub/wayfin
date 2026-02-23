@@ -1,51 +1,46 @@
-# WayFin - Gestão Financeira e Benefícios
+# WayFin - Gestão
 
-WayFin é uma plataforma web para gestão financeira empresarial, com foco em:
+Plataforma web para gestão financeira e operacional, com módulos de:
 
 - contas a pagar e receber
-- conciliação bancária
 - contratos e clientes
-- gestão de colaboradores e adesões de planos (saúde/odonto)
-- dashboards e relatórios operacionais
+- conciliação bancária
+- colaboradores e adesão de planos
+- relatórios e dashboard executivo
 
-## Visão Geral
-
-O sistema é composto por:
+## Arquitetura
 
 - `client/`: frontend React + Vite + TypeScript
-- `server/`: backend Node.js + Express + TypeScript
-- MongoDB para persistência
+- `server/`: API Node.js + Express + TypeScript
+- Banco: MongoDB (Atlas ou local)
 
-## Stack
+## Stack Técnica
 
 - Frontend: React, Vite, TypeScript, Tailwind CSS, Axios
-- Backend: Node.js, Express, TypeScript, Mongoose, JWT
-- Banco: MongoDB (local via Docker ou Atlas)
-- Deploy: Render (Web Service + Static Site) e Atlas M0
+- Backend: Express, Mongoose, JWT, Multer
+- Deploy recomendado: Render (frontend + backend) + Atlas M0
 
-## Funcionalidades Principais
+## Funcionalidades
 
-- Autenticação e autorização por perfil/permissão
-- Dashboard financeiro com métricas e gráficos
-- Gestão de:
-  - transações
-  - contas bancárias
-  - categorias
-  - contratos
-  - clientes
-  - colaboradores
-  - planos de saúde e odontológicos
-  - adesões
-- Relatórios com exportação (CSV, PDF e Excel)
-- Conciliação bancária com importação de OFX
-- Configurações do usuário (perfil, senha, avatar)
+- Login com autorização por perfil/permissões
+- Dashboard com métricas de receita/despesa e saldo
+- Gestão de transações, categorias e contas bancárias
+- Gestão de contratos e clientes
+- Gestão de colaboradores, planos e adesões
+- Conciliação bancária por arquivo OFX
+- Exportações de relatório em CSV, PDF e Excel
+- Configuração de usuário:
+  - nome
+  - e-mail com confirmação
+  - troca de senha
+  - foto de perfil com recorte circular
 
-## Estrutura do Projeto
+## Estrutura de Pastas
 
 ```text
 WayFin/
-├── client/                    # Frontend
-├── server/                    # Backend
+├── client/
+├── server/
 ├── docker-compose.yml
 ├── docker-compose.oracle.yml
 ├── DEPLOY_RENDER_ATLAS.md
@@ -59,9 +54,9 @@ WayFin/
 - npm 10+
 - MongoDB local ou Atlas
 
-## Execução Local (Sem Docker)
+## Rodar Local (Sem Docker)
 
-1. Backend:
+### 1. Backend
 
 ```bash
 cd server
@@ -70,7 +65,7 @@ npm install
 npm run dev
 ```
 
-2. Frontend:
+### 2. Frontend
 
 ```bash
 cd client
@@ -79,28 +74,46 @@ npm install
 npm run dev
 ```
 
-3. URLs locais:
+### 3. Endpoints locais
 
-- Frontend: `http://localhost:5173` (ou porta do Vite)
+- Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5000`
+- Health check API: `http://localhost:5000/api/health`
 
-## Execução com Docker
+## Build
 
-Guia completo em:
+### Backend
 
-- `README.Docker.md`
+```bash
+cd server
+npm run build
+```
+
+### Frontend
+
+```bash
+cd client
+npm run build
+```
 
 ## Deploy
 
-### Render + Atlas (recomendado para começar)
+### Render + Atlas (fluxo atual)
 
-Siga:
+Guia completo:
 
 - `DEPLOY_RENDER_ATLAS.md`
 
+Configuração esperada:
+
+- Frontend (`wayfin`): `https://wayfin.onrender.com`
+- Backend (`wayfin-api`): `https://wayfin-api.onrender.com`
+- Frontend env: `VITE_API_URL=https://wayfin-api.onrender.com/api`
+- Backend env: `CORS_ORIGIN=https://wayfin.onrender.com`
+
 ### Oracle Always Free + Docker
 
-Siga:
+Guia completo:
 
 - `DEPLOY_ORACLE_ALWAYS_FREE.md`
 
@@ -118,35 +131,34 @@ Siga:
 
 - `VITE_API_URL`
 
+## Scripts Operacionais
+
+- `seed-atlas-admin.sh`  
+  Cria/atualiza admin no Atlas.
+- `create-docker-admin.sh`  
+  Cria admin em ambiente Docker.
+- `fix-admin.sh`  
+  Reexecuta seed local.
+
 ## Segurança
 
-- Defina `JWT_SECRET` forte em produção
-- Restrinja `CORS_ORIGIN` ao domínio do frontend
-- Nunca comite segredos reais no repositório
-- Restrinja IPs no Atlas em produção
+- Use `JWT_SECRET` forte em produção
+- Restrinja `CORS_ORIGIN` ao domínio real do frontend
+- Não comite segredos reais em `git`
+- Restrinja rede no Atlas (evite `0.0.0.0/0` em produção)
+- Mantenha dependências atualizadas (`npm audit`)
 
-## Qualidade e Build
+## Troubleshooting Rápido
 
-Backend:
-
-```bash
-cd server
-npm run build
-```
-
-Frontend:
-
-```bash
-cd client
-npm run build
-```
-
-## Scripts Úteis
-
-- `seed-atlas-admin.sh`: cria/atualiza usuário admin no Atlas
-- `create-docker-admin.sh`: cria admin em ambiente Docker
-- `fix-admin.sh`: reexecuta seed local
+- API no ar:
+  - `https://wayfin-api.onrender.com/api/health`
+- Se login falhar:
+  - valide `MONGODB_URI` no backend
+  - valide `VITE_API_URL` no frontend
+  - rode `seed-atlas-admin.sh` para recriar admin
+- Se aba do navegador mostrar título incorreto:
+  - conferir `client/index.html` (`WayFin - Gestão`)
 
 ## Licença
 
-Este projeto está sob a licença MIT. Consulte `LICENSE`.
+MIT. Consulte `LICENSE`.
